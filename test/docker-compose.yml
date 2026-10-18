@@ -1,0 +1,19 @@
+# Test lab: a WordPress site with a simulated (harmless) infection, scanned by wp-rescue-scan.sh
+# The database password comes from LAB_DB_PASS (see README): nothing is hard-coded.
+services:
+  db:
+    image: mysql:8.0
+    environment: { MYSQL_DATABASE: wp, MYSQL_USER: wp, MYSQL_PASSWORD: "${LAB_DB_PASS:?set LAB_DB_PASS}", MYSQL_RANDOM_ROOT_PASSWORD: "yes" }
+  wordpress:
+    image: wordpress:php8.3-apache
+    depends_on: [db]
+    environment: { WORDPRESS_DB_HOST: db, WORDPRESS_DB_USER: wp, WORDPRESS_DB_PASSWORD: "${LAB_DB_PASS:?set LAB_DB_PASS}", WORDPRESS_DB_NAME: wp }
+    volumes: [ "site:/var/www/html" ]
+  cli:
+    image: wordpress:cli
+    depends_on: [db, wordpress]
+    user: "33:33"
+    environment: { WORDPRESS_DB_HOST: db, WORDPRESS_DB_USER: wp, WORDPRESS_DB_PASSWORD: "${LAB_DB_PASS:?set LAB_DB_PASS}", WORDPRESS_DB_NAME: wp }
+    volumes: [ "site:/var/www/html", "../:/scan:ro", "./infect.sh:/infect.sh:ro" ]
+    entrypoint: [ "sh", "-c" ]
+volumes: { site: {} }
